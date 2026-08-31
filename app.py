@@ -6,6 +6,7 @@ from pathlib import Path
 import openpyxl
 import pdfplumber
 import streamlit as st
+from openpyxl.styles import Font
 
 st.set_page_config(page_title="Orden de Producción → Excel", page_icon="📦", layout="centered")
 
@@ -170,6 +171,16 @@ def llenar_plantilla(datos, plantilla_path):
             for idx, val in enumerate(valores, start=1):
                 celda = ws.cell(row=fila, column=idx, value=val)
                 celda._style = copy(estilos_ref[columnas[idx - 1]])
+                if idx in (8, 9):
+                    # TALLAS y CANTIDAD POR TALLA: fuente monoespaciada para
+                    # que los espacios de relleno alineen de verdad en pantalla
+                    # (Calibri es de ancho variable, no alinea aunque el
+                    # numero de caracteres coincida).
+                    f = celda.font
+                    celda.font = Font(
+                        name="Consolas", size=f.size, bold=f.bold,
+                        italic=f.italic, color=f.color,
+                    )
             fila += 1
 
     ultima_fila_datos = fila - 1
