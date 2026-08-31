@@ -128,12 +128,24 @@ def validar_totales(datos):
 # 2. LLENADO DE LA PLANTILLA
 # ---------------------------------------------------------------------------
 
-def _formatear_cantidad(ratio, tallas, ancho_min=2):
-    partes = []
+def _anchos_columnas(tallas, ratios_de_todos_los_packs):
+    """Un ancho por talla: el maximo entre el largo del nombre de la talla
+    y el largo de la cantidad mas grande que se va a imprimir en esa
+    columna para toda la orden. Asi el encabezado y las cantidades quedan
+    siempre alineados, sin importar si el numero es de 1 o 2 digitos."""
+    anchos = {}
     for t in tallas:
-        ancho = max(len(t), ancho_min)
-        partes.append(f"{ratio.get(t, 0):>{ancho}}")
-    return "  ".join(partes)
+        max_cant = max((len(str(r.get(t, 0))) for r in ratios_de_todos_los_packs), default=1)
+        anchos[t] = max(len(t), max_cant)
+    return anchos
+
+
+def _formatear_encabezado(tallas, anchos):
+    return "  ".join(f"{t:>{anchos[t]}}" for t in tallas)
+
+
+def _formatear_cantidad(ratio, tallas, anchos):
+    return "  ".join(f"{ratio.get(t, 0):>{anchos[t]}}" for t in tallas)
 
 
 def llenar_plantilla(datos, plantilla_path):
@@ -141,14 +153,15 @@ def llenar_plantilla(datos, plantilla_path):
     ws = wb["Hoja1"] if "Hoja1" in wb.sheetnames else wb.worksheets[0]
 
     tallas = datos["tallas"]
-    encabezado_tallas = "  ".join(tallas)
+    anchos = _anchos_columnas(tallas, [p["ratio"] for p in datos["packs"]])
+    encabezado_tallas = _formatear_encabezado(tallas, anchos)
 
     columnas = list("ABCDEFGHI")
     estilos_ref = {col: copy(ws.cell(row=2, column=i + 1)._style) for i, col in enumerate(columnas)}
 
     fila = 2
     for pack in datos["packs"]:
-        cadena_cantidad = _formatear_cantidad(pack["ratio"], tallas)
+        cadena_cantidad = _formatear_cantidad(pack["ratio"], tallas, anchos)
         for n in range(1, pack["total_packs"] + 1):
             valores = [
                 datos["orden"], datos["modelo"], pack["letra"], pack["pza_pack"],
