@@ -345,7 +345,7 @@ def _draw_label_pdf(c, et, page_w, page_h):
     c.setFont("Helvetica", 6)
     c.drawCentredString(COL_A_W / 2 * cm, y3 - 0.30 * cm, "# de Pack")
     c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(COL_A_W / 2 * cm, y3 - 0.75 * cm, f"{et['num_pack']}/{et['total_packs']}")
+    c.drawCentredString(COL_A_W / 2 * cm, y3 - 0.75 * cm, str(et["num_pack"]))
 
     c.setFont("Helvetica", 6)
     c.drawCentredString((COL_A_W + COL_B_W / 2) * cm, y3 - 0.28 * cm, "Cantidad y curva de tallas")
@@ -411,7 +411,7 @@ def _zpl_one_label(et: dict) -> str:
         f"^FO195,{row2 + 5}^A0N,14,14^FDPza. por Pack:^FS",
         f"^FO370,{row2 + 2}^A0N,22,20^FD{et['pza_pack']}^FS",
         f"^FO0,{row3 + 8}^A0N,16,16^FB{x_b1},1,0,C,0^FD# de Pack^FS",
-        f"^FO0,{row3 + 30}^A0N,34,32^FB{x_b1},1,0,C,0^FD{et['num_pack']}/{et['total_packs']}^FS",
+        f"^FO0,{row3 + 30}^A0N,34,32^FB{x_b1},1,0,C,0^FD{et['num_pack']}^FS",
         f"^FO{x_b2},{row3 + 8}^A0N,16,16^FB{W - x_b2},1,0,C,0^FDColor:^FS",
         f"^FO{x_b2},{row3 + 40}^A0N,24,22^FB{W - x_b2},1,0,C,0^FD{et['color']}^FS",
     ]
