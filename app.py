@@ -219,16 +219,24 @@ def _tallas_presentes_etiqueta(ratio: dict) -> list:
 def expand_packs_to_labels(datos, destinatario: str = DESTINATARIO_DEFAULT) -> list:
     """Convierte datos['packs'] (tipos A, B, C...) en una lista *plana* de
     etiquetas individuales, una por cada pack físico, numeradas 1..N dentro
-    de su tipo -- el campo '# de Pack' del diseño original."""
+    de su tipo -- el campo '# de Pack' del diseño original.
+
+    La curva de tallas de cada etiqueta siempre incluye TODAS las tallas
+    de la orden (datos['tallas']), con 0 en las que ese pack no lleva --
+    así la etiqueta muestra la curva completa aunque el pack en particular
+    no traiga esa talla."""
+    tallas_orden = datos.get("tallas") or []
     etiquetas = []
     for p in datos["packs"]:
+        tallas_pack = tallas_orden or list(p["ratio"].keys())
+        ratio_completo = {t: p["ratio"].get(t, 0) for t in tallas_pack}
         for n in range(1, p["total_packs"] + 1):
             etiquetas.append({
                 "orden": datos["orden"], "modelo": datos["modelo"], "color": datos["color"],
                 "descripcion": datos["descripcion"], "destinatario": destinatario,
                 "letra": p["letra"], "pza_pack": p["pza_pack"],
                 "num_pack": n, "total_packs": p["total_packs"],
-                "ratio": p["ratio"],
+                "ratio": ratio_completo,
             })
     return etiquetas
 
