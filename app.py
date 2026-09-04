@@ -195,15 +195,27 @@ def llenar_plantilla(datos, plantilla_path):
 LABEL_W_CM = 10.0
 LABEL_H_CM = 3.5
 
+# Márgenes de seguridad respecto al borde físico de la etiqueta -- el
+# contenido se dibuja adentro de este margen para que no quede "pegado" al
+# filo (donde el ZT410/la impresora suelen recortar o desalinear un poco).
+# Si al imprimir todavía queda justo de un lado, sube ese valor 0.05-0.10cm.
+MARGIN_TOP_CM = 0.20
+MARGIN_LEFT_CM = 0.20
+MARGIN_RIGHT_CM = 0.12
+MARGIN_BOTTOM_CM = 0.12
+
+CONTENT_W_CM = LABEL_W_CM - MARGIN_LEFT_CM - MARGIN_RIGHT_CM
+CONTENT_H_CM = LABEL_H_CM - MARGIN_TOP_CM - MARGIN_BOTTOM_CM
+
 ROW1_H = 0.55   # Orden de Compra | Modelo
 ROW2_H = 0.68   # Destinatario | "Descripcion:"
 ROW3_H = 0.65   # Tipo de Pack + Pza. por Pack | (texto de descripción)
-ROW4_H = LABEL_H_CM - ROW1_H - ROW2_H - ROW3_H  # fila grande: # Pack | Curva | Color
+ROW4_H = CONTENT_H_CM - ROW1_H - ROW2_H - ROW3_H  # fila grande: # Pack | Curva | Color
 
-COL_SPLIT = 6.0   # límite entre columna izq/der en filas 1-3
+COL_SPLIT = 6.0   # límite entre columna izq/der en filas 1-3 (dentro del área de contenido)
 COL_A_W = 2.0     # fila 4: ancho "# de Pack"
 COL_B_W = 5.5     # fila 4: ancho "Cantidad y curva de tallas"
-COL_C_W = LABEL_W_CM - COL_A_W - COL_B_W  # fila 4: ancho "Color"
+COL_C_W = CONTENT_W_CM - COL_A_W - COL_B_W  # fila 4: ancho "Color"
 
 TALLAS_ORDEN_ETIQUETA = ["ECH", "CH", "M", "G", "EG", "XG", "XXG"]
 
@@ -271,9 +283,13 @@ def build_labels_pdf(etiquetas: list) -> bytes:
 
     buf = io.BytesIO()
     page_w, page_h = LABEL_W_CM * cm, LABEL_H_CM * cm
+    content_w, content_h = CONTENT_W_CM * cm, CONTENT_H_CM * cm
     c = canvas.Canvas(buf, pagesize=(page_w, page_h))
     for et in etiquetas:
-        _draw_label_pdf(c, et, page_w, page_h)
+        c.saveState()
+        c.translate(MARGIN_LEFT_CM * cm, MARGIN_BOTTOM_CM * cm)
+        _draw_label_pdf(c, et, content_w, content_h)
+        c.restoreState()
         c.showPage()
     c.save()
     return buf.getvalue()
@@ -379,7 +395,9 @@ def build_labels_zpl(etiquetas: list) -> str:
 
 
 def _zpl_one_label(et: dict) -> str:
-    W, H = _d(LABEL_W_CM), _d(LABEL_H_CM)
+    PW_full, LL_full = _d(LABEL_W_CM), _d(LABEL_H_CM)  # tamaño físico real de la etiqueta
+    margin_left, margin_top = _d(MARGIN_LEFT_CM), _d(MARGIN_TOP_CM)
+    W, H = _d(CONTENT_W_CM), _d(CONTENT_H_CM)  # área de contenido, ya descontado el margen
     row1, row2, row3 = _d(ROW1_H), _d(ROW1_H + ROW2_H), _d(ROW1_H + ROW2_H + ROW3_H)
     col_split = _d(COL_SPLIT)
     x_b1 = _d(COL_A_W)
@@ -387,10 +405,10 @@ def _zpl_one_label(et: dict) -> str:
 
     lines = [
         "^XA",
-        f"^PW{W}",
-        f"^LL{H}",
+        f"^PW{PW_full}",
+        f"^LL{LL_full}",
         "^CI28",
-        "^LH0,0",
+        f"^LH{margin_left},{margin_top}",  # desplaza todo el contenido lejos del borde físico
         f"^FO0,{row1}^GB{W},1,2^FS",
         f"^FO0,{row2}^GB{W},1,2^FS",
         f"^FO0,{row3}^GB{W},1,2^FS",
